@@ -29,19 +29,19 @@ architecture Behavioral of fifo is
 
 begin
 
--- Keeps count of FIFO use
+    -- Keeps count of FIFO use
     count <= writeptr - readptr;
 
--- Data ready to recive when FIFO is not full
+    -- Data ready to recive when FIFO is not full
     s_ready_i <= '1' when count /= 15 else '0';
     s_axis_tready <=s_ready_i ;
 
--- Data output valid when the FIFO is no empty
+    -- Data output valid when the FIFO is no empty
     m_valid_i <='1' when count /= 0 else '0';
-    m_axis_tvalid <= m_valid_i ;
+    --    m_axis_tvalid <= m_valid_i ;
 
 
--- tracks the write and read pointers
+    -- tracks the write and read pointers
     process (s_aclk )
     begin
         if rising_edge (s_aclk ) then
@@ -57,7 +57,7 @@ begin
     end process ;
 
 
--- Single write and read to FIFO memory
+    -- Single write and read to FIFO memory
     process (s_aclk, s_aresetn)
     begin
         if (s_aresetn = '0') then
@@ -67,6 +67,9 @@ begin
         elsif(rising_edge (s_aclk))then
             if (m_valid_i ='1') then
                 m_axis_tdata <= fifo_var(to_integer (readptr));
+                m_axis_tvalid <='1';
+            else
+                m_axis_tvalid<='0';
             end if;
             if(s_axis_tvalid ='1') then
                 fifo_var(to_integer (writeptr)) <= s_axis_tdata;

@@ -24,6 +24,7 @@ architecture Behavioral of uart_tx_tb is
     signal rx_line          : std_logic ;
     signal reset            : std_logic;
     signal i                : integer ;
+    signal j                : integer;
 
 begin
 
@@ -46,9 +47,9 @@ begin
         tx_data_valid <='0';
         wait for (clock_period_100M  * 100);
         reset <= '0';
-        
-        rx_ready <= '1';
-        
+
+        --        rx_ready <= '0';
+
         --wait until uart_tx_ready = '1';
         for i in 0 to 127 loop
             if(tx_ready ='0') then
@@ -66,6 +67,17 @@ begin
         wait;
     end process;
 
+
+    process
+    begin
+        for j in 0 to 16 loop
+            rx_ready <= '0';
+            wait for 1 mS;
+            rx_ready <= '1';
+            wait for 1mS;
+        end loop;
+
+    end process;
 
 
     DUT_uart_FIFO : uart

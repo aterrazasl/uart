@@ -2,16 +2,8 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use work.uart_package.ALL;
-
-
--- Uncomment the following library declaration if using
--- arithmetic functions with Signed or Unsigned values
 use IEEE.NUMERIC_STD.ALL;
 
--- Uncomment the following library declaration if instantiating
--- any Xilinx leaf cells in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
 
 entity uart is
     Port (
@@ -42,6 +34,8 @@ architecture Behavioral of uart is
     signal s_axis_tdata     : std_logic_vector(8-1 DOWNTO 0) := (OTHERS => '0');
     signal wr_rst_busy      : std_logic := '0';
     signal rd_rst_busy      : std_logic := '0';
+    signal rx_wr_rst_busy      : std_logic := '0';
+    signal rx_rd_rst_busy      : std_logic := '0';
     signal s_aclk_i         : std_logic := '0';
 
 
@@ -75,12 +69,28 @@ begin
             tx_line    => tx_line
         );
 
+
+    FIFO_RX_COMP : fifo
+        PORT MAP (
+            s_aresetn                 => s_aresetn,
+            m_axis_tvalid             => rx_data_valid,
+            m_axis_tready             => rx_ready,
+            m_axis_tdata              => rx_data,
+            s_axis_tvalid             => s_axis_tvalid,
+            s_axis_tready             => s_axis_tready,
+            s_axis_tdata              => s_axis_tdata,
+            wr_rst_busy               => rx_wr_rst_busy,
+            rd_rst_busy               => rx_rd_rst_busy,
+            s_aclk                    => s_aclk_i);
+
+
+
     UART_RX_COMP : uart_rx
         port map(
             clock       => s_aclk_i,
-            data_out    => rx_data,
-            data_valid  => rx_data_valid,
-            ready       => rx_ready,
+            data_out    => s_axis_tdata,
+            data_valid  => s_axis_tvalid,
+            ready       => s_axis_tready,
             reset       => reset,
             rx_line     => rx_line
         );

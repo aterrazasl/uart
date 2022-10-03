@@ -14,18 +14,21 @@ end uart_tx_tb;
 
 architecture Behavioral of uart_tx_tb is
     signal clock            : std_logic;
-    signal uart_tx_ready    : std_logic;
-    signal data_in          : std_logic_vector(7 downto 0);
-    signal uart_data_ready  : std_logic ;
-    signal tx_line_out      : std_logic ;
+    signal tx_ready    : std_logic;
+    signal tx_data          : std_logic_vector(7 downto 0);
+    signal tx_data_valid    : std_logic ;
+    signal rx_ready    : std_logic;
+    signal rx_data          : std_logic_vector(7 downto 0);
+    signal rx_data_valid    : std_logic ;
+    signal tx_line          : std_logic ;
+    signal rx_line          : std_logic ;
     signal reset            : std_logic;
     signal i                : integer ;
 
-    signal readptr         : unsigned (3 downto 0):= x"0"; --1024
-    signal writeptr        : unsigned (3 downto 0):= x"5"; --1024 
-    signal result          :unsigned(3 downto 0) :=x"0";
-
 begin
+
+    -- loopback
+    rx_line <= tx_line ;
 
     ---- Clock Generation
     GENERATE_CLOCK100M: process
@@ -39,47 +42,47 @@ begin
     GENERATE_RESET: process
     begin
         reset <= '1';
-        data_in <= x"00";
-        uart_data_ready <='0';
+        tx_data <= x"00";
+        tx_data_valid <='0';
         wait for (clock_period_100M  * 100);
         reset <= '0';
+        
+        rx_ready <= '1';
+        
         --wait until uart_tx_ready = '1';
         for i in 0 to 127 loop
-            if(uart_tx_ready ='0') then
-                wait until uart_tx_ready ='1';
+            if(tx_ready ='0') then
+                wait until tx_ready ='1';
             end if;
 
-            data_in <= std_logic_vector(to_unsigned(i, 8));
-            --        data_in <= x"EA";
+            tx_data <= std_logic_vector(to_unsigned(i, 8));
+            --        tx_data <= x"EA";
             wait until clock ='1';
-            uart_data_ready <='1';
+            tx_data_valid <='1';
             wait until clock ='1';
-            uart_data_ready <='0';
+            tx_data_valid <='0';
         end loop;
 
         wait;
     end process;
 
 
-    TESTING_COUNTER: process (clock)
-    begin
-        if rising_edge (clock) then
-            readptr <= readptr + 1;
-            result <= readptr - writeptr ;
-        end if;
-
-    end process;
-
-
 
     DUT_uart_FIFO : uart
         port map (
-            clock       => clock,
-            data_in     => data_in,
-            data_ready  => uart_data_ready,
-            ready       => uart_tx_ready,
-            reset       => reset,
-            tx_line     => tx_line_out
+            reset          => reset ,
+            clock          => clock,
+            --             
+            tx_data        => tx_data,
+            tx_data_valid  => tx_data_valid ,
+            tx_ready       => tx_ready ,
+            --             
+            rx_data        => rx_data,
+            rx_data_valid  => rx_data_valid,
+            rx_ready       => rx_ready,
+            --             => ,
+            rx_line        => rx_line,
+            tx_line        => tx_line
         );
 
 end Behavioral;

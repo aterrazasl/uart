@@ -15,12 +15,19 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity uart is
     Port (
-        clock           : in std_logic;                   -- 100Mhz clock input
-        data_in         : in std_logic_vector (7 downto 0);      -- convert this to parameter lenght
-        data_ready      : in std_logic;                   -- data_in ready to be transmitted
-        ready           : out std_logic;                  -- uart ready to send new data
-        reset           : in std_logic;                    -- reset the module
-        tx_line         : out std_logic
+        reset           : in std_logic;                      -- reset the module`
+        clock           : in std_logic;                      -- 100Mhz clock input
+        --
+        tx_data         : in std_logic_vector (7 downto 0);  -- data to transmit
+        tx_data_valid   : in std_logic;                      -- tx_data is valid
+        tx_ready        : out std_logic;                     -- uart ready to send new data
+        --
+        rx_data         : out std_logic_vector (7 downto 0); -- received data
+        rx_data_valid   : out std_logic;                     -- rx_data is valid
+        rx_ready        : in std_logic;                      -- master ready 
+        --
+        rx_line         : in std_logic;                      -- physical pin from RX
+        tx_line         : out std_logic                      -- physical pin to TX
     );
 end uart;
 
@@ -33,8 +40,8 @@ architecture Behavioral of uart is
     signal s_axis_tvalid    : std_logic := '0';
     signal s_axis_tready    : std_logic := '0';
     signal s_axis_tdata     : std_logic_vector(8-1 DOWNTO 0) := (OTHERS => '0');
-    signal wr_rst_busy      :  std_logic := '0';
-    signal rd_rst_busy      :  std_logic := '0';
+    signal wr_rst_busy      : std_logic := '0';
+    signal rd_rst_busy      : std_logic := '0';
     signal s_aclk_i         : std_logic := '0';
 
 
@@ -44,21 +51,21 @@ begin
     s_aresetn   <= not reset;
     s_aclk_i    <= clock;
 
-    FIFO_COMP : fifo
+    FIFO_TX_COMP : fifo
         PORT MAP (
             s_aresetn                 => s_aresetn,
             m_axis_tvalid             => m_axis_tvalid,
             m_axis_tready             => m_axis_tready,
             m_axis_tdata              => m_axis_tdata,
-            s_axis_tvalid             => data_ready,
-            s_axis_tready             => ready,
-            s_axis_tdata              => data_in,
+            s_axis_tvalid             => tx_data_valid,
+            s_axis_tready             => tx_ready,
+            s_axis_tdata              => tx_data,
             wr_rst_busy               => wr_rst_busy,
             rd_rst_busy               => rd_rst_busy,
             s_aclk                    => s_aclk_i);
 
 
-    UART_TX_DUT : uart_tx
+    UART_TX_COMP : uart_tx
         port map(
             clock      => s_aclk_i,
             data_in    => m_axis_tdata,
@@ -68,6 +75,15 @@ begin
             tx_line    => tx_line
         );
 
+    UART_RX_COMP : uart_rx
+        port map(
+            clock       => s_aclk_i,
+            data_out    => rx_data,
+            data_valid  => rx_data_valid,
+            ready       => rx_ready,
+            reset       => reset,
+            rx_line     => rx_line
+        );
 
 
 end Behavioral;

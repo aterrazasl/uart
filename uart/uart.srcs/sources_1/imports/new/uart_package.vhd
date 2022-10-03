@@ -13,6 +13,25 @@ package uart_package is
     constant clock_period_100M : time := 10 ns;
 
 
+    component uart is
+        Port (
+            reset           : in std_logic;                      -- reset the module`
+            clock           : in std_logic;                      -- 100Mhz clock input
+            --
+            tx_data         : in std_logic_vector (7 downto 0);  -- data to transmit
+            tx_data_valid   : in std_logic;                      -- tx_data is valid
+            tx_ready        : out std_logic;                     -- uart ready to send new data
+            --
+            rx_data         : out std_logic_vector (7 downto 0); -- received data
+            rx_data_valid   : out std_logic;                     -- rx_data is valid
+            rx_ready        : in std_logic;                      -- master ready 
+            --
+            rx_line         : in std_logic;                      -- physical pin from RX
+            tx_line         : out std_logic                      -- physical pin to TX
+        );
+    end component;
+    
+    
     component uart_tx
         Port (
             clock           : in std_logic;                   -- 100Mhz clock input
@@ -24,15 +43,14 @@ package uart_package is
         );
     end component;
 
-
-    component uart is
+    component uart_rx is
         Port (
             clock           : in std_logic;                   -- 100Mhz clock input
-            data_in         : in std_logic_vector (7 downto 0);      -- convert this to parameter lenght
-            data_ready      : in std_logic;                   -- data_in ready to be transmitted
-            ready           : out std_logic;                  -- uart ready to send new data
+            data_out        : out std_logic_vector (7 downto 0);      -- convert this to parameter lenght
+            data_valid      : out std_logic;                   -- data_in is valid
+            ready           : in std_logic;                  -- receiver ready
             reset           : in std_logic;                    -- reset the module
-            tx_line         : out std_logic
+            rx_line         : in std_logic
         );
     end component;
 

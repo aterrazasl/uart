@@ -8,9 +8,17 @@ use IEEE.NUMERIC_STD.ALL;
 
 
 entity uart_tx is
+    generic(
+        BAUDRATE        : integer   := 115200;
+        CLOCK_FREQUENCY : integer   := 120000000;
+        DATA_WIDTH      : integer   := 8;
+        STOP_STATE      : std_logic := '1';
+        START_STATE     : std_logic := '0';
+        PARITY_ENABLED  : std_logic := '1'
+    );
     Port (
         clock           : in std_logic;                   -- 100Mhz clock input
-        data_in         : in std_logic_vector (7 downto 0);      -- convert this to parameter lenght
+        data_in         : in std_logic_vector (DATA_WIDTH - 1 downto 0);      -- convert this to parameter lenght
         data_ready      : in std_logic;                   -- data_in ready to be transmitted
         ready           : out std_logic;                  -- uart ready to send new data
         reset           : in std_logic;                    -- reset the module
@@ -20,10 +28,10 @@ entity uart_tx is
 end uart_tx;
 
 architecture Behavioral of uart_tx is
-    signal BAUDRATE       : integer := 115200 ;    -- convert to signal
+    --signal BAUDRATE       : integer := 115200 ;    -- convert to signal
     signal baudrate_count : integer := 0;    -- counts the number of clocks for the specified signal
     signal data_count     : integer := 0;    -- counts the number of bits sent
-    signal MAX_DATA       : integer := 8;
+    --signal MAX_DATA       : integer := 8;
 
     type state_machine is (IDLE, START, DATA, PARITY, STOP);
     signal current_state    : state_machine := IDLE;
@@ -32,8 +40,8 @@ architecture Behavioral of uart_tx is
     signal data_ready_i     : std_logic;
     signal baudrate_done    : std_logic := '0';
     signal data_count_done  : std_logic := '0' ;
-    signal data_in_i        :std_logic_vector (7 downto 0) :=x"00";
-    signal data_buffer      :std_logic_vector (7 downto 0) :=x"00";
+    signal data_in_i        :std_logic_vector (DATA_WIDTH-1 downto 0) :=x"00";
+    signal data_buffer      :std_logic_vector (DATA_WIDTH-1 downto 0) :=x"00";
 
 begin
 
@@ -62,7 +70,7 @@ begin
             if (current_state /= next_state ) then
                 baudrate_count <= 0;
                 baudrate_done <='0';
-            elsif( baudrate_count >= 100000000 / BAUDRATE) then
+            elsif( baudrate_count >= CLOCK_FREQUENCY / BAUDRATE) then
                 baudrate_done <='1';
                 baudrate_count <= 0;
             else
@@ -84,14 +92,14 @@ begin
                 data_buffer <= data_in_i;
             else
                 if (baudrate_done  ='1') then
-                    if(data_count = MAX_DATA-1) then
+                    if(data_count = DATA_WIDTH-1) then
                         data_count <= 0;
                         data_count_done <= '1';
                         data_buffer <= data_in_i;
                     else
                         data_count <= data_count +1;
                         data_count_done <= '0';
-                        data_buffer <= '0' & data_buffer(7 downto 1);
+                        data_buffer <= '0' & data_buffer(DATA_WIDTH - 1 downto 1);
                     end if;
 
                 end if;
@@ -117,7 +125,11 @@ begin
                 end if;
             when DATA =>
                 if (baudrate_done = '1' and data_count_done ='1')then
-                    next_state <= PARITY;
+                    if(PARITY_ENABLED = '1') then
+                        next_state <= PARITY;
+                    else
+                        next_state  <= STOP;
+                    end if;
                 else
                     next_state <= DATA;
                 end if;
@@ -159,17 +171,17 @@ begin
     begin
         case current_state  is
             when IDLE =>
-                tx_line <= '1';
+                tx_line <= STOP_STATE;
             when START =>
-                tx_line <= '0';
+                tx_line <= START_STATE;
             when DATA =>
                 tx_line <= data_buffer(0) ;
             when PARITY =>
                 tx_line <= not data_in_i(0);
             when STOP =>
-                tx_line <= '1';
+                tx_line <= STOP_STATE;
             when others =>
-                 tx_line <= '1';
+                tx_line <= STOP_STATE;
         end case;
 
     end process;

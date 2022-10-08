@@ -37,6 +37,7 @@ architecture Behavioral of uart is
     signal rx_wr_rst_busy      : std_logic := '0';
     signal rx_rd_rst_busy      : std_logic := '0';
     signal s_aclk_i         : std_logic := '0';
+    constant CLOCK_MHZ      : integer := 125000000;
 
 
 
@@ -60,6 +61,10 @@ begin
 
 
     UART_TX_COMP : uart_tx
+        generic map(
+            CLOCK_FREQUENCY => CLOCK_MHZ,
+            PARITY_ENABLED => '0'
+        )
         port map(
             clock      => s_aclk_i,
             data_in    => m_axis_tdata,
@@ -86,6 +91,10 @@ begin
 
 
     UART_RX_COMP : uart_rx
+        generic map(
+            CLOCK_FREQUENCY => CLOCK_MHZ,
+            PARITY_ENABLED => '0'
+        )
         port map(
             clock       => s_aclk_i,
             data_out    => s_axis_tdata,
@@ -94,6 +103,5 @@ begin
             reset       => reset,
             rx_line     => rx_line
         );
-
 
 end Behavioral;

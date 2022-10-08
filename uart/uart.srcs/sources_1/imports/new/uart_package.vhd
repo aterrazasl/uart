@@ -30,12 +30,20 @@ package uart_package is
             tx_line         : out std_logic                      -- physical pin to TX
         );
     end component;
-    
-    
+
+
     component uart_tx
+        generic(
+            BAUDRATE        : integer   := 115200;
+            CLOCK_FREQUENCY : integer   := 120000000;
+            DATA_WIDTH      : integer   := 8;
+            STOP_STATE      : std_logic := '1';
+            START_STATE     : std_logic := '0';
+            PARITY_ENABLED  : std_logic := '1'
+        );
         Port (
             clock           : in std_logic;                   -- 100Mhz clock input
-            data_in         : in std_logic_vector (7 downto 0);      -- convert this to parameter lenght
+            data_in         : in std_logic_vector (DATA_WIDTH - 1 downto 0);      -- convert this to parameter lenght
             data_ready      : in std_logic;                   -- data_in ready to be transmitted
             ready           : out std_logic;                  -- uart ready to send new data
             reset           : in std_logic;                    -- reset the module
@@ -44,9 +52,17 @@ package uart_package is
     end component;
 
     component uart_rx is
+        generic(
+            BAUDRATE        : integer   := 115200;
+            CLOCK_FREQUENCY : integer   := 120000000;
+            DATA_WIDTH      : integer   := 8;
+            STOP_STATE      : std_logic := '1';
+            START_STATE     : std_logic := '0';
+            PARITY_ENABLED  : std_logic := '1'
+        );
         Port (
             clock           : in std_logic;                   -- 100Mhz clock input
-            data_out        : out std_logic_vector (7 downto 0);      -- convert this to parameter lenght
+            data_out        : out std_logic_vector (DATA_WIDTH - 1 downto 0);      -- convert this to parameter lenght
             data_valid      : out std_logic;                   -- data_in is valid
             ready           : in std_logic;                  -- receiver ready
             reset           : in std_logic;                    -- reset the module
@@ -55,20 +71,20 @@ package uart_package is
     end component;
 
 
-    component tx_fifo is
-        PORT (
-            s_aresetn                 : IN  std_logic := '0';
-            m_axis_tvalid             : OUT std_logic := '0';
-            m_axis_tready             : IN  std_logic := '0';
-            m_axis_tdata              : OUT std_logic_vector(8-1 DOWNTO 0) := (OTHERS => '0');
-            s_axis_tvalid             : IN  std_logic := '0';
-            s_axis_tready             : OUT std_logic := '0';
-            s_axis_tdata              : IN  std_logic_vector(8-1 DOWNTO 0) := (OTHERS => '0');
-            wr_rst_busy               : OUT  std_logic := '0';
-            rd_rst_busy               : OUT  std_logic := '0';
-            s_aclk                    : IN  std_logic := '0');
+    --    component tx_fifo is
+    --        PORT (
+    --            s_aresetn                 : IN  std_logic := '0';
+    --            m_axis_tvalid             : OUT std_logic := '0';
+    --            m_axis_tready             : IN  std_logic := '0';
+    --            m_axis_tdata              : OUT std_logic_vector(8-1 DOWNTO 0) := (OTHERS => '0');
+    --            s_axis_tvalid             : IN  std_logic := '0';
+    --            s_axis_tready             : OUT std_logic := '0';
+    --            s_axis_tdata              : IN  std_logic_vector(8-1 DOWNTO 0) := (OTHERS => '0');
+    --            wr_rst_busy               : OUT  std_logic := '0';
+    --            rd_rst_busy               : OUT  std_logic := '0';
+    --            s_aclk                    : IN  std_logic := '0');
 
-    end component;
+    --    end component;
 
 
     component fifo is

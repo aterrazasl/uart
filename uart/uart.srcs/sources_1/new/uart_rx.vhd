@@ -4,9 +4,17 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
 entity uart_rx is
+    generic(
+        BAUDRATE        : integer   := 115200;
+        CLOCK_FREQUENCY : integer   := 120000000;
+        DATA_WIDTH      : integer   := 8;
+        STOP_STATE      : std_logic := '1';
+        START_STATE     : std_logic := '0';
+        PARITY_ENABLED  : std_logic := '1'
+    );
     Port (
         clock           : in std_logic;                   -- 100Mhz clock input
-        data_out         : out std_logic_vector (7 downto 0);      -- convert this to parameter lenght
+        data_out        : out std_logic_vector (DATA_WIDTH - 1 downto 0);      -- convert this to parameter lenght
         data_valid      : out std_logic;                   -- data_in is valid
         ready           : in std_logic;                  -- receiver ready
         reset           : in std_logic;                    -- reset the module
@@ -18,9 +26,9 @@ architecture Behavioral of uart_rx is
     --#SIGNALS
     type state_machine is (IDLE, START, DATA, PARITY, STOP,VALID);
     signal current_state, next_state :state_machine := IDLE;
-    signal data_buffer          : std_logic_vector (7 downto 0) := x"00";
-    signal BAUDRATE             : integer := 115200;
-    signal data_max             : integer := 8;
+    signal data_buffer          : std_logic_vector (DATA_WIDTH-1 downto 0) := x"00";
+    --    signal BAUDRATE             : integer := 115200;
+    --    signal data_max             : integer := 8;
     signal baudrate_count       : integer :=0;
     signal baudrate_done        : std_logic;
     signal data_done            : std_logic ;
@@ -34,7 +42,6 @@ architecture Behavioral of uart_rx is
 
 begin
 
-    rx_line_i <= rx_line;
     data_valid <='1' when current_state = VALID  else '0';
 
     --keeps track of data count
@@ -47,7 +54,7 @@ begin
                 data_count <= 0;
             else
                 if (baudrate_done = '1') then
-                    if(data_count = data_max - 1) then
+                    if(data_count = DATA_WIDTH - 1) then
                         data_count <= 0;
                         data_done  <= '1';
                     else
@@ -67,10 +74,10 @@ begin
                 baudrate_count          <= 0;
                 baudrate_done           <= '0';
                 halfbaudrate_done       <= '0';
-            elsif  (baudrate_count      >= 100000000/BAUDRATE) then
+            elsif  (baudrate_count      >= CLOCK_FREQUENCY/BAUDRATE) then
                 baudrate_count      <= 0;
                 baudrate_done       <= '1';
-            elsif (baudrate_count   = 100000000/(BAUDRATE*2)) then
+            elsif (baudrate_count   = CLOCK_FREQUENCY/(BAUDRATE*2)) then
                 halfbaudrate_done    <= '1';
                 baudrate_done       <= '0';
                 baudrate_count      <= baudrate_count + 1;
@@ -87,6 +94,7 @@ begin
     process (clock)
     begin
         if(rising_edge (clock)) then
+            rx_line_i <= rx_line;
             rx_line_dly <= rx_line_i;
         end if;
     end process;
@@ -98,7 +106,7 @@ begin
     begin
         case current_state is
             when IDLE =>
-                if (rx_line_dly = '1' and rx_line_i = '0') then
+                if (rx_line_dly = not(START_STATE) and rx_line_i = START_STATE) then
                     next_state <= START;
                 else
                     next_state <= IDLE;
@@ -113,7 +121,11 @@ begin
 
             when DATA  =>
                 if(data_done = '1'  and baudrate_done = '1') then
-                    next_state <= PARITY;
+                    if(PARITY_ENABLED = '1') then
+                        next_state <= PARITY;
+                    else
+                        next_state <= STOP;
+                    end if;
                 else
                     next_state <= DATA;
                 end if;
@@ -165,7 +177,7 @@ begin
                 when START =>
                 when DATA =>
                     if(next_state = DATA and baudrate_done = '1') then
-                        data_buffer <= rx_line_i & data_buffer(7 downto 1);
+                        data_buffer <= rx_line_i & data_buffer(DATA_WIDTH - 1 downto 1);
                     end if;
                 when PARITY  =>
                 when STOP =>

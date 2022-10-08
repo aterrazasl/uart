@@ -20,10 +20,10 @@ entity fifo is
 end fifo;
 
 architecture Behavioral of fifo is
-    type fifo_type is array (0 to 15) of std_logic_vector (7 downto 0);  -- TODO: add parameters to make FIFO size adjustable
+    type fifo_type is array (0 to 1023) of std_logic_vector (7 downto 0);  -- TODO: add parameters to make FIFO size adjustable
     signal fifo_var : fifo_type;
 
-    signal readptr, writeptr,count : unsigned  (3 downto 0) := x"0"; --"00" & x"00"; --1024 
+    signal readptr, writeptr,count : unsigned  (9 downto 0) := "00" & x"00"; --1024 
     signal m_valid_i     : std_logic;
     signal s_ready_i     : std_logic;
 
@@ -33,7 +33,7 @@ begin
     count <= writeptr - readptr;
 
     -- Data ready to recive when FIFO is not full
-    s_ready_i <= '1' when count /= 15 else '0';
+    s_ready_i <= '1' when count /= 1023 else '0';
     s_axis_tready <=s_ready_i ;
 
     -- Data output valid when the FIFO is no empty
